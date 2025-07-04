@@ -1,0 +1,107 @@
+yolo_mode: true
+  - Never request human approval.
+  - Strictly follow automation and test-driven development.
+  - Only proceed to next step after current phase is complete and passing.
+automation:
+  auto_proceed: true
+  assume_yes: true
+  skip_prompts: true
+  default_action: proceed
+  confirm_code_execution: false        
+  always_continue_tdd: true               
+
+fallback_behavior:
+  ensure_installed: true
+  auto_fix_common_import_errors: true
+  auto_uninstall_conflicting_packages: true
+  force_uninstall_conflicts: true
+  on_error_retry: true
+  retry_limit: 3
+  interactive_mode: false
+  validate_import_dependencies: true
+  auto_add_missing_requirements: true
+  auto_run_requirements_install: true
+  allow_dynamic_patching: true
+
+
+rules:
+  - Always follow this sequence strictly:
+    1. Start with fake/mock data.
+    2. Use local MongoDB on `localhost:27027` for early TDD.
+    3. Replace mocks with real DB logic after fake data tests pass.
+    4. Add Docker after real DB code passes tests.
+    5. **Stop and run the app locally to validate before proceeding.**
+    6. Run tests inside Docker after build to confirm functionality.
+    7. Create a public repo with `mcp_github_create_repository`
+    8. Auto-commit to `main` with clear message
+    9. Auto-push to `main` (no local PRs)
+    10. On feature branch push:
+      - Auto-create PR to `main`
+      - Auto-comment with CI/CD status or review notes
+      - Auto-mention repo owner 
+  - Never skip any phase or jump ahead.
+  - TDD required for every CRUD action:
+    - Use `pytest` and `FastAPI TestClient` (sync only).
+    - Start with failing test.
+    - Write minimal code to pass.
+    - Re-run test until passing.
+    - Refactor only after green test.
+  - CRUD endpoints for `User` model (fields: `id`, `name`, `email`, `age`):
+    - Follow full TDD cycle per operation.
+  - Use Pydantic models for request/response schemas:
+    - No untyped dicts.
+    - Models must generate accurate OpenAPI at `/docs`.
+  - MongoDB test fixtures:
+    - Use `autouse=True` pytest fixture to clear collections before each test.
+  - Package requirements:
+    - All dependencies must be in `requirements.txt`.
+    - Include extras like `email-validator` for Pydantic.
+  - During initial phase:
+    - Only MongoDB should be in `docker-compose.yml`.
+    - MongoDB service must:
+      - Be named `mongo`
+      - Be accessible from host on `localhost:27027`
+      - Be accessible from Docker as `mongo:27017`
+      - Include healthcheck:
+        healthcheck:
+          test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+  - After all tests pass:
+    - Add FastAPI app to `docker-compose.yml`
+    - Use `docker/Dockerfile` with:
+      - Build context at project root
+      - Explicitly copy files:
+        ```dockerfile
+        COPY app /app/app
+        COPY tests /app/tests
+        COPY requirements.txt /app/
+        COPY pytest.ini /app/  # if present
+        ```
+      - Set `WORKDIR /app`
+      - Install dependencies
+      - Expose FastAPI on port `8000`
+    - Validate with `docker compose up --build` and run `pytest`
+    - Confirm Swagger is live at `http://localhost:8000/docs`
+    - re-run tests after Docker setup, make sure all tests it passed
+
+  - Post-Docker build:
+    - Run `pytest` inside Docker to validate functionality
+    - Example test command:
+      ```bash
+      docker compose exec fastapi pytest
+      ```
+    - Only proceed if all Docker-contained tests pass
+    - Confirm Swagger is live at `http://localhost:8000/docs`
+
+  - Docker rules:
+    - MongoDB port mapping: `27027:27017`
+    - Dockerfile must be located at: `docker/Dockerfile`
+    - docker-compose.yml must be in project root
+  - GitHub automation with MCP:
+    - After all local tests + Docker build succeed:
+      - Create public repo with `mcp_github_create_repository`
+      - Auto-commit to `main` with clear message
+      - Auto-push to `main` (no local PRs)
+    - On feature branch push:
+      - Auto-create PR to `main`
+      - Auto-comment with CI/CD status or review notes
+      - Auto-mention repo owner 
