@@ -1,3 +1,5 @@
+[![CI](https://github.com/HenryOnMic/demo_be_auto/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/HenryOnMic/demo_be_auto/actions/workflows/ci.yml)
+
 # FastAPI + MongoDB CRUD Backend
 
 A full-featured backend with FastAPI, MongoDB, Docker, TDD, Swagger UI, and GitHub MCP automation.
